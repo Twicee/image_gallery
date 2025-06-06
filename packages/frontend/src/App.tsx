@@ -21,7 +21,7 @@ function App() {
 
     function handleLoginSuccess(token: string) {
         setAuthToken(token);
-        fetchImages(token); // ✅ Immediately fetch images with new token
+        fetchImages(token);
     }
 
     function handleImageSearch() {
@@ -90,7 +90,7 @@ function App() {
                     path={ValidRoutes.UPLOAD}
                     element={
                         <ProtectedRoute authToken={authToken}>
-                            <UploadPage authToken={authToken}/>
+                            <UploadPage authToken={authToken} onUploadSuccess={()=> fetchImages(authToken)}/>
                         </ProtectedRoute>
                     }
                 />

@@ -2,6 +2,7 @@ import { useActionState, useId, useState } from "react";
 
 interface UploadPageProps {
     authToken: string;
+    onUploadSuccess: () => void;
 }
 
 function readAsDataURL(file: File): Promise<string> {
@@ -13,7 +14,7 @@ function readAsDataURL(file: File): Promise<string> {
     });
 }
 
-export function UploadPage({ authToken }: UploadPageProps) {
+export function UploadPage({ authToken, onUploadSuccess }: UploadPageProps) {
     const fileInputId = useId();
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export function UploadPage({ authToken }: UploadPageProps) {
                     const data = await response.json().catch(() => ({}));
                     return data.message || "Upload failed.";
                 }
-
+                onUploadSuccess();
                 return "Upload successful!";
             } catch (err) {
                 return "Server error.";
