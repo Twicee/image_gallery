@@ -16,14 +16,30 @@ export function ImageNameEditor(props: INameEditorProps) {
         setIsSubmitting(true);
         setError(null);
         try {
-            const response = await fetch("/api/images");
-            if (!response.ok) throw new Error("Request failed");
+            const response = await fetch(`/api/images/${props.imageId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name: input })
+            });
+
+            if (!response.ok) {
+                if (response.status === 400) {
+                    throw new Error("Bad request: name is missing or invalid.");
+                } else if (response.status === 404) {
+                    throw new Error("Image not found.");
+                } else if (response.status === 422) {
+                    throw new Error("Image name is too long.");
+                } else {
+                    throw new Error("Request failed");
+                }
+            }
 
             props.onNameChange(input);
-
             setIsEditingName(false);
         } catch (err) {
-            setError("Failed to update image name.");
+            setError((err as Error).message);
         } finally {
             setIsSubmitting(false);
         }

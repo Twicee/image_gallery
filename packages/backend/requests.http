@@ -12,6 +12,10 @@ Content-Type: application/json # Content-Type header is a must if you're sending
 ### Search images by name
 GET http://localhost:3000/api/images/search?name=shiba
 
+### See all Images
+GET http://localhost:3000/api/images
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImNodW5reWxvdmVyMjMiLCJpYXQiOjE3NDkxNzY5NTksImV4cCI6MTc0OTI2MzM1OX0.WDMVfIOctEG1_SkhpS5TWo_461oQGsbnorZfdZOG-7I
+
 ### Edit image name
 PATCH http://localhost:3000/api/images/68396ffd8da65d4477286ac5
 Content-Type: application/json
@@ -50,6 +54,85 @@ Content-Type: application/json
 
 {
   "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+}
+
+### New user registration
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "username": "chunkylover23",
+  "password": "password"
+}
+
+### Missing fields
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "username": "onlyusername"
+}
+
+### Duplicate username
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "password"
+}
+
+### Login and get token
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "chunkylover23",
+  "password": "password"
+}
+
+### Invalid username -> triggers 401
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "doesnotexist",
+  "password": "password"
+}
+
+### Login with incorrect password -> triggers 401
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "wrongpassword"
+}
+
+### Login with missing fields -> triggers 400
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "newuser"
+}
+
+### Should succeed if token owner === authorId
+PATCH http://localhost:3000/api/images/68396ffd8da65d4477286ac5
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImNodW5reWxvdmVyMjMiLCJpYXQiOjE3NDkxNzY5NTksImV4cCI6MTc0OTI2MzM1OX0.WDMVfIOctEG1_SkhpS5TWo_461oQGsbnorZfdZOG-7I
+Content-Type: application/json
+
+{
+  "name": "Sheepies"
+}
+
+### Should fail with 403 if logged-in user != authorId
+PATCH http://localhost:3000/api/images/68396ffd8da65d4477286ac8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImNodW5reWxvdmVyMjMiLCJpYXQiOjE3NDkxNzY5NTksImV4cCI6MTc0OTI2MzM1OX0.WDMVfIOctEG1_SkhpS5TWo_461oQGsbnorZfdZOG-7I
+Content-Type: application/json
+
+{
+  "name": "newuser"
 }
 
 

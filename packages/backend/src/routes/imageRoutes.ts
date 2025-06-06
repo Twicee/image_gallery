@@ -1,10 +1,50 @@
 import express, { Request, Response } from "express";
 import { ImageProvider } from "../ImageProvider";
 import { ObjectId } from "mongodb";
+import { connectMongo } from "../connectMongo";
+import { imageMiddlewareFactory, handleImageFileErrors } from "../middleware/imageUploadMiddleware";
 
 function waitDuration(numMs: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, numMs));
 }
+
+export async function uploadHandler(req: Request, res: Response) {
+    const file = req.file;
+    const name = req.body?.name;
+
+    if (!file || typeof name !== "string") {
+        res.status(400).send({
+            error: "Bad Request",
+            message: "Missing file or image name"
+        });
+        return;
+    }
+
+    const authorId = req.user?.username;
+    if (!authorId) {
+        res.status(401).send({
+            error: "Unauthorized",
+            message: "Missing authentication"
+        });
+        return;
+    }
+
+    const src = `/uploads/${file.filename}`;
+
+    try {
+        const mongoClient = connectMongo();
+        const imageProvider = new ImageProvider(mongoClient);
+        await imageProvider.createImage({ name, src, authorId });
+        res.status(201).send();
+    } catch (err) {
+        console.error("Failed to save image metadata:", err);
+        res.status(500).send({
+            error: "Internal Server Error",
+            message: "Could not save image metadata"
+        });
+    }
+}
+
 
 export function registerImageRoutes(app: express.Application, imageProvider: ImageProvider) {
     app.get("/api/images", async (req: Request, res: Response) => {
@@ -48,36 +88,48 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
                     message: "Missing or invalid 'name' in request body"
                 });
             }
-
             if (newName.length > MAX_NAME_LENGTH) {
                 return res.status(422).send({
                     error: "Unprocessable Entity",
                     message: `Image name exceeds ${MAX_NAME_LENGTH} characters`
                 });
             }
-
             if (!ObjectId.isValid(imageId)) {
                 return res.status(404).send({
                     error: "Not Found",
                     message: "Image does not exist"
                 });
             }
-
-            try {
-                const matchedCount = await imageProvider.updateImageName(imageId, newName);
-
-                if (matchedCount === 0) {
-                    return res.status(404).send({
-                        error: "Not Found",
-                        message: "Image does not exist"
-                    });
-                }
-
-                res.status(204).send();
-            } catch (err) {
-                console.error("Failed to update image:", err);
-                res.status(500).json({ error: "Could not update image" });
+            const image = await imageProvider.getImageById(imageId);
+            if (!image) {
+                return res.status(404).send({
+                    error: "Not Found",
+                    message: "Image does not exist"
+                });
             }
+
+            if (image.authorId !== req.user?.username) {
+                return res.status(403).send({
+                    error: "Forbidden",
+                    message: "Only the image owner can rename this image"
+                });
+            }
+
+            const updated = await imageProvider.updateImageName(imageId, newName);
+            if (updated === 0) {
+                return res.status(404).send({
+                    error: "Not Found",
+                    message: "Image does not exist"
+                });
+            }
+            res.status(204).send();
         })();
     });
+
+    app.post(
+        "/api/images",
+        imageMiddlewareFactory.single("image"),
+        handleImageFileErrors,
+        uploadHandler,
+    );
 }

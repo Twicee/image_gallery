@@ -2,7 +2,7 @@ import { Collection, MongoClient, ObjectId } from "mongodb";
 import type { IApiImageData } from "shared/ApiImageData";
 
 interface IImageDocument {
-    id: string;
+    id?: string;
     src: string;
     name: string;
     authorId: string;
@@ -17,6 +17,7 @@ interface IUserDocument {
 export class ImageProvider {
     private imageCollection: Collection<IImageDocument>;
     private userCollection: Collection<IUserDocument>;
+    
 
     constructor(private readonly mongoClient: MongoClient) {
         const imageCollectionName = process.env.IMAGES_COLLECTION_NAME;
@@ -35,19 +36,14 @@ export class ImageProvider {
         ? { name: { $regex: nameFilter, $options: "i" } }
         : {};
         const images = await this.imageCollection.find(filter).toArray();
-        const authorIds = [...new Set(images.map(img => img.authorId))];
-        const users = await this.userCollection
-        .find({ id: { $in: authorIds } })
-        .toArray();
-        
-        const userMap = new Map(users.map(user => [user.id, user]));
         return images.map(image => ({
             id: image.id ?? image._id.toString(),
             src: image.src,
             name: image.name,
-            author: userMap.get(image.authorId) ?? {
+            author: {
                 id: image.authorId,
-                username: "unknown"
+                username: image.authorId, 
+                email: "fake@example.com"
             }
         }));
     }
@@ -61,5 +57,17 @@ export class ImageProvider {
             { $set: { name: newName } }
         );
         return result.matchedCount;
+    }
+
+    async getImageById(imageId: string) {
+        return await this.imageCollection.findOne({ _id: new ObjectId(imageId) });
+    }
+
+    async createImage(data: { name: string; src: string; authorId: string }): Promise<void> {
+        await this.imageCollection.insertOne({
+            name: data.name,
+            src: data.src,
+            authorId: data.authorId
+        });
     }
 }
