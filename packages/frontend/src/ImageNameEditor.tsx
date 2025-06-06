@@ -3,6 +3,7 @@ import { useState } from "react";
 interface INameEditorProps {
     initialValue: string;
     imageId: string;
+    authToken: string;
     onNameChange: (newName: string) => void;
 }
 
@@ -19,7 +20,8 @@ export function ImageNameEditor(props: INameEditorProps) {
             const response = await fetch(`/api/images/${props.imageId}`, {
                 method: "PATCH",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${props.authToken}`
                 },
                 body: JSON.stringify({ name: input })
             });

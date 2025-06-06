@@ -6,10 +6,11 @@ interface ImageDetailsProps {
     images: IApiImageData[];
     isLoading: boolean;
     hasError: boolean;
+    authToken: string;
     setImageData: React.Dispatch<React.SetStateAction<IApiImageData[]>>;
 }
 
-export function ImageDetails({ images, isLoading, hasError, setImageData }: ImageDetailsProps) {
+export function ImageDetails({ images, isLoading, hasError, authToken, setImageData }: ImageDetailsProps) {
     const { imageId } = useParams();
     const image = images.find(image => image.id === imageId);
 
@@ -32,6 +33,7 @@ export function ImageDetails({ images, isLoading, hasError, setImageData }: Imag
             <ImageNameEditor
                 initialValue={image.name}
                 imageId={image.id}
+                authToken={authToken}
                 onNameChange={handleNameChange}
             />
             <img className="ImageDetails-img" src={image.src} alt={image.name} />

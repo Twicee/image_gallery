@@ -114,6 +114,7 @@ function App() {
                                 images={imageData}
                                 isLoading={isLoading}
                                 hasError={hasError}
+                                authToken={authToken}
                                 setImageData={setImageData}
                             />
                         </ProtectedRoute>

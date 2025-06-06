@@ -1,50 +1,48 @@
 import express, { Request, Response } from "express";
 import { ImageProvider } from "../ImageProvider";
 import { ObjectId } from "mongodb";
-import { connectMongo } from "../connectMongo";
 import { imageMiddlewareFactory, handleImageFileErrors } from "../middleware/imageUploadMiddleware";
 
 function waitDuration(numMs: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, numMs));
 }
 
-export async function uploadHandler(req: Request, res: Response) {
+export function uploadHandler(imageProvider: ImageProvider): express.RequestHandler {
+  return async (req, res) => {
     const file = req.file;
     const name = req.body?.name;
 
     if (!file || typeof name !== "string") {
-        res.status(400).send({
-            error: "Bad Request",
-            message: "Missing file or image name"
-        });
-        return;
+      res.status(400).send({
+        error: "Bad Request",
+        message: "Missing file or image name",
+      });
+      return;
     }
 
     const authorId = req.user?.username;
     if (!authorId) {
-        res.status(401).send({
-            error: "Unauthorized",
-            message: "Missing authentication"
-        });
-        return;
+      res.status(401).send({
+        error: "Unauthorized",
+        message: "Missing authentication",
+      });
+      return;
     }
 
     const src = `/uploads/${file.filename}`;
 
     try {
-        const mongoClient = connectMongo();
-        const imageProvider = new ImageProvider(mongoClient);
-        await imageProvider.createImage({ name, src, authorId });
-        res.status(201).send();
+      await imageProvider.createImage({ name, src, authorId });
+      res.status(201).send();
     } catch (err) {
-        console.error("Failed to save image metadata:", err);
-        res.status(500).send({
-            error: "Internal Server Error",
-            message: "Could not save image metadata"
-        });
+      console.error("Failed to save image metadata:", err);
+      res.status(500).send({
+        error: "Internal Server Error",
+        message: "Could not save image metadata",
+      });
     }
+  };
 }
-
 
 export function registerImageRoutes(app: express.Application, imageProvider: ImageProvider) {
     app.get("/api/images", async (req: Request, res: Response) => {
@@ -130,6 +128,6 @@ export function registerImageRoutes(app: express.Application, imageProvider: Ima
         "/api/images",
         imageMiddlewareFactory.single("image"),
         handleImageFileErrors,
-        uploadHandler,
+        uploadHandler(imageProvider),
     );
 }
